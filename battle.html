@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hash Scrapper!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+      .container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 36px;
+      }
+
+      textarea {
+        width: 60%;
+        height: 200px;
+        padding: 15px;
+        border: 2px solid #667eea;
+        border-radius: 5px;
+        font-size: 16px;
+        resize: vertical;
+        background: white;
+        font-family: "Courier New", monospace;
+        display: block;
+        margin: 0 auto;
+      }
+
+      button {
+        background: #c0392b;
+        color: white;
+        border: none;
+        padding: 15px 35px;
+        font-size: 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 10px 5px;
+        transition: all 0.3s;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      button:hover {
+        background: #e74c3c;
+        transform: scale(1.05);
+      }
+      button:disabled {
+        background: #95a5a6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .ring {
+        display: none;
+        margin-top: 20px;
+      }
+      .active-wrestlers {
+        position: relative;
+        background: #2c3e50;
+        padding: 40px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 8px solid #c0392b;
+      }
+      .active-wrestlers::before {
+        content: "";
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        right: 15px;
+        bottom: 15px;
+        border: 3px solid #e74c3c;
+        border-radius: 5px;
+        pointer-events: none;
+      }
+      .active-wrestlers::after {
+        content: "";
+        position: absolute;
+        top: 25px;
+        left: 25px;
+        right: 25px;
+        bottom: 25px;
+        border: 2px solid #e67e22;
+        border-radius: 5px;
+        pointer-events: none;
+      }
+      .active-wrestlers h3 {
+        position: relative;
+        z-index: 1;
+        color: white;
+        margin-top: 0;
+      }
+      .wrestler {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 8px 15px;
+        margin: 5px;
+        border-radius: 20px;
+        font-weight: bold;
+        position: relative;
+        z-index: 1;
+      }
+      .info {
+        background: #e8f4f8;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+      }
+      .entrant-info {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border-left: 4px solid #28a745;
+      }
+      .elimination {
+        background: #c0392b;
+        color: white;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        animation: pulse 0.5s;
+        border: 3px solid #e74c3c;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+      .winner {
+        background: gold;
+        color: #333;
+        padding: 30px;
+        border-radius: 10px;
+        margin: 20px 0;
+        font-size: 28px;
+        font-weight: bold;
+        text-align: center;
+        border: 5px solid #ff8800;
+        animation: pulse 1s infinite;
+      }
+      .stats {
+        font-size: 11px;
+        color: #666;
+        margin-top: 5px;
+        font-family: "Courier New", monospace;
+      }
+      .hash-details {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        margin-top: 8px;
+        font-size: 11px;
+        font-family: "Courier New", monospace;
+        border-left: 3px solid #6c757d;
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>⚡ HASH SCRAPPER! ⚡</h1>
+
+      <div id="setup">
+        <p><strong>Enter competitor names (one per line):</strong></p>
+        <textarea
+          id="nameInput"
+          placeholder="Billy Bob&#10;Tommy Sue&#10;Cletus Ray&#10;Daisy Mae&#10;Bubba Joe&#10;..."
+        ></textarea>
+        <center>
+          <button onclick="startRumble()">🔥 START SCRAPPER! 🔥</button>
+        </center>
+      </div>
+
+      <div id="ring" class="ring">
+        <div class="info">
+          <strong>Minute:</strong> <span id="round">1</span><br />
+          <strong>Static Salt:</strong> <span id="salt"></span><br />
+          <strong>Remaining Entrants:</strong> <span id="remaining">0</span>
+        </div>
+
+        <div class="active-wrestlers">
+          <h3>In the Ring:</h3>
+          <div id="activeWrestlers"></div>
+        </div>
+
+        <center>
+          <button id="continueBtn" onclick="nextMinute()">CONTINUE</button>
+          <button
+            id="restartBtn"
+            onclick="restart()"
+            style="display: none; background: #27ae60"
+          >
+            RESTART WITH SAME NAMES
+          </button>
+        </center>
+
+        <div id="message"></div>
+      </div>
+    </div>
+
+    <script>
+      let wrestlers = [];
+      let remainingEntrants = [];
+      let inRing = [];
+      let minute = 0;
+      let staticSalt = "";
+      let cleanedList = [];
+      let displayNames = {};
+      let entryPositions = {};
+      let entryCounter = 0;
+      let originalInput = "";
+
+      function cleanName(name) {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      }
+
+      function displayName(name) {
+        return name.replace(/[^a-z0-9 ]/gi, "");
+      }
+
+      function startRumble() {
+        const input = document.getElementById("nameInput").value;
+        const names = input.split("\n").filter((n) => n.trim());
+
+        if (names.length < 2) {
+          alert("Please enter at least 2 competitors!");
+          return;
+        }
+
+        // Clean the list and track display names
+        displayNames = {};
+        const seenClean = new Set();
+        cleanedList = [];
+
+        names.forEach((name) => {
+          const display = displayName(name);
+          const clean = cleanName(name);
+
+          if (clean && !seenClean.has(clean)) {
+            seenClean.add(clean);
+            cleanedList.push(clean);
+            displayNames[clean] = display;
+          }
+        });
+
+        cleanedList.sort(); // Put in order
+
+        // Store the cleaned list for restart (with display names)
+        originalInput = cleanedList.map((c) => displayNames[c]).join("\n");
+
+        // Update the textarea with cleaned list
+        document.getElementById("nameInput").value = originalInput;
+
+        // Generate static salt (YYYY_MM_DD_HH_MM_SS)
+        const now = new Date();
+        staticSalt = `${now.getFullYear()}_${String(
+          now.getMonth() + 1
+        ).padStart(2, "0")}_${String(now.getDate()).padStart(2, "0")}_${String(
+          now.getHours()
+        ).padStart(2, "0")}_${String(now.getMinutes()).padStart(
+          2,
+          "0"
+        )}_${String(now.getSeconds()).padStart(2, "0")}`;
+
+        // Initialize
+        remainingEntrants = [...cleanedList];
+        inRing = [];
+        minute = 0;
+        entryCounter = 0;
+        entryPositions = {};
+
+        // Show ring, hide setup
+        document.getElementById("setup").style.display = "none";
+        document.getElementById("ring").style.display = "block";
+        document.getElementById("salt").textContent = staticSalt;
+        document.getElementById("continueBtn").style.display = "inline-block";
+        document.getElementById("restartBtn").style.display = "none";
+
+        // Draw initial 2 wrestlers
+        drawInitialWrestlers();
+      }
+
+      function drawInitialWrestlers() {
+        minute = 1;
+        updateMinuteDisplay();
+
+        // Calculate hashes for all remaining entrants
+        const hashes = remainingEntrants.map((name) => {
+          const entryString = `${minute}${staticSalt}${name}`;
+          return {
+            name: name,
+            entryString: entryString,
+            hash: md5(entryString),
+          };
+        });
+
+        // Sort by hash and get lowest 2
+        hashes.sort((a, b) => a.hash.localeCompare(b.hash));
+
+        const firstTwo = hashes.slice(0, 2);
+
+        let messageHtml =
+          '<div class="info"><strong>Starting the scrapper!</strong></div>';
+
+        firstTwo.forEach((wrestler) => {
+          entryCounter++;
+          inRing.push(wrestler.name);
+          entryPositions[wrestler.name] = entryCounter;
+          remainingEntrants = remainingEntrants.filter(
+            (n) => n !== wrestler.name
+          );
+
+          messageHtml += `<div class="entrant-info">
+                    🎺 <strong>${displayNames[
+                      wrestler.name
+                    ].toUpperCase()} (#${entryCounter})</strong> enters!
+                    <div class="hash-details">
+                        Entry String: ${wrestler.entryString}<br>
+                        Entry Hash: ${wrestler.hash}
+                    </div>
+                </div>`;
+        });
+
+        updateDisplay();
+        document.getElementById("message").innerHTML = messageHtml;
+      }
+
+      function nextMinute() {
+        if (inRing.length === 1 && remainingEntrants.length === 0) {
+          showWinner();
+          return;
+        }
+
+        minute++;
+        updateMinuteDisplay();
+
+        // Check for eliminations
+        const gameHashes = inRing.map((name) => {
+          const gameString = `${staticSalt}${name}${minute}`;
+          return {
+            name: name,
+            gameString: gameString,
+            hash: md5(gameString),
+          };
+        });
+
+        // Check if any hash starts with e or f
+        const eliminationCandidates = gameHashes.filter((w) => {
+          const firstChar = w.hash.charAt(0);
+          return firstChar === "e" || firstChar === "f";
+        });
+
+        let messageHtml = "";
+
+        if (eliminationCandidates.length > 0) {
+          // Find highest hash to eliminate
+          eliminationCandidates.sort((a, b) => b.hash.localeCompare(a.hash));
+          const eliminated = eliminationCandidates[0];
+
+          // Pick a random eliminator from those still in the ring (excluding the eliminated)
+          const possibleEliminators = inRing.filter(
+            (n) => n !== eliminated.name
+          );
+          const eliminator =
+            possibleEliminators[
+              Math.floor(Math.random() * possibleEliminators.length)
+            ];
+
+          // Random elimination description
+          const descriptions = [
+            `clotheslined`,
+            `body slammed`,
+            `dropkicked`,
+            `powerslammed`,
+            `superkicked`,
+            `pile-drived`,
+            `German suplexed`,
+            `spinebustered`,
+            `DDT'd`,
+			'Molly whopped',
+			'sweet chin musiced',
+			'suplexed',
+			'atomic dropped',
+			'bulldogged',
+			'stone cold stunned',
+			'pedigreed',
+			'smacked',
+			'backhanded',
+			'pimp slapped',
+			'headbutted',
+            'knife edge chopped',
+            'throat punched',
+            'brain bustered'			
+          ];
+          const action =
+            descriptions[Math.floor(Math.random() * descriptions.length)];
+
+          inRing = inRing.filter((n) => n !== eliminated.name);
+
+          messageHtml = `<div class="elimination">
+                    💥 ELIMINATED! 💥<br>
+                    <span style="font-size: 20px;">${displayNames[
+                      eliminator
+                    ].toUpperCase()} ${action} ${displayNames[
+            eliminated.name
+          ].toUpperCase()} out of the match!</span>
+                    <div class="hash-details" style="background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff;">
+                        Game String: ${eliminated.gameString}<br>
+                        Game Hash: ${eliminated.hash}
+                    </div>
+                </div>`;
+        } else {
+          messageHtml = `<div class="info">No eliminations this minute! All hashes start with 0-d.</div>`;
+        }
+
+        // Draw new entrant if available
+        if (remainingEntrants.length > 0) {
+          const entryHashes = remainingEntrants.map((name) => {
+            const entryString = `${minute}${staticSalt}${name}`;
+            return {
+              name: name,
+              entryString: entryString,
+              hash: md5(entryString),
+            };
+          });
+
+          entryHashes.sort((a, b) => a.hash.localeCompare(b.hash));
+          const newEntrant = entryHashes[0];
+
+          entryCounter++;
+          inRing.push(newEntrant.name);
+          entryPositions[newEntrant.name] = entryCounter;
+          remainingEntrants = remainingEntrants.filter(
+            (n) => n !== newEntrant.name
+          );
+
+          messageHtml += `<div class="entrant-info">
+                    🎺 <strong>${displayNames[
+                      newEntrant.name
+                    ].toUpperCase()} (#${entryCounter})</strong> enters!
+                    <div class="hash-details">
+                        Entry String: ${newEntrant.entryString}<br>
+                        Entry Hash: ${newEntrant.hash}
+                    </div>
+                </div>`;
+        }
+
+        document.getElementById("message").innerHTML = messageHtml;
+        updateDisplay();
+
+        // Check if only one left
+        if (inRing.length === 1 && remainingEntrants.length === 0) {
+          document.getElementById("continueBtn").textContent =
+            "DECLARE WINNER!";
+        }
+      }
+
+      function showWinner() {
+        const winner = inRing[0];
+        document.getElementById(
+          "message"
+        ).innerHTML = `<div class="winner">🏆 WINNER! 🏆<br>${displayNames[
+          winner
+        ].toUpperCase()}<br>HASH SCRAPPER CHAMPION!</div>`;
+        document.getElementById("continueBtn").style.display = "none";
+        document.getElementById("restartBtn").style.display = "inline-block";
+      }
+
+      function restart() {
+        document.getElementById("nameInput").value = originalInput;
+        document.getElementById("setup").style.display = "block";
+        document.getElementById("ring").style.display = "none";
+        document.getElementById("message").innerHTML = "";
+        document.getElementById("continueBtn").textContent = "CONTINUE";
+        document.getElementById("continueBtn").style.display = "inline-block";
+      }
+
+      function updateDisplay() {
+        const activeDiv = document.getElementById("activeWrestlers");
+        activeDiv.innerHTML = inRing
+          .map(
+            (name) =>
+              `<span class="wrestler">${displayNames[name]} (${entryPositions[name]})</span>`
+          )
+          .join("");
+
+        document.getElementById("remaining").textContent =
+          remainingEntrants.length;
+      }
+
+      function updateMinuteDisplay() {
+        document.getElementById("round").textContent = minute;
+      }
+    </script>
+  </body>
+</html>
